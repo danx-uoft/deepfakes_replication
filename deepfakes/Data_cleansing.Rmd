@@ -1,0 +1,124 @@
+---
+title: "deepfake_data"
+author: "Dan Xu"
+date: "3/1/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+load the libraries 
+```{r}
+library(tidyverse)
+library(survey)
+library(stargazer)
+library(weights)
+library(stringr)
+```
+
+load the dataset
+```{r}
+cps2018 <- readRDS("/Users/dans/Documents/Github/Political-Deepfakes-Fx/Political-Deepfakes-Fx-main/cps2018_crosstabs.rds")
+view(cps2018)
+```
+
+```{r}
+cps2018_clean <- 
+  cps2018 %>% 
+  select (-value,-year) 
+```
+
+convert the first letter of the variables into Uppercase
+```{r}
+cps2018_clean$name <- 
+  str_to_title(cps2018_clean$name)  
+```
+
+recode race
+```{r}
+
+cps2018_clean$name[cps2018_clean$name == "Black/Negro"] <- "Black"
+cps2018_clean$name[cps2018_clean$name == "Asian Only"] <- "Asian"
+
+cps2018_clean_race <- 
+  cps2018_clean %>% 
+  filter(variable == "race") 
+
+cps2018_clean_race$name <- 
+recode(cps2018_clean_race$name, "'Black' = 'Black';
+'White' = 'White';
+'Asian' = 'Asian';
+	else='Other'")
+
+    
+
+
+# Solution 2: 
+# cps2018 <- 
+#   cps2018 %>%
+#     mutate(value = ifelse(name == "white", "White", 
+#                         ifelse(name == "black/negro", "Black", 
+#                                ifelse(name == "asian only", "Asian", 
+#                                       ifelse(variable == "race", "Other", value)))))
+# 
+# cps2018 <- 
+#   cps2018 %>%
+#     mutate(value = ifelse(name == "not hispanic", "Not Hispanic", 
+#                         ifelse(variable == "hispan", "Hispanic", value)))
+
+```
+
+Age
+```{r}
+cps2018age <- read_delim("/Users/dans/Documents/Github/Political-Deepfakes-Fx/Political-Deepfakes-Fx-main/cps2018_crosstabs_age.txt", delim="|",
+                       col_names = c("cat", "n"))
+
+cps2018age$prop <- as.numeric(gsub(",", "", cps2018age$n))/323156
+cps2018age$cat <- as.factor(cps2018age$cat)
+cps2018age$cat <- fct_collapse(cps2018age$cat,
+    "18-24" = c(
+        "18-20",
+        "20-24"
+    ),
+    "25-34" = c(
+        "25-29",
+        "30-34"    
+    ),
+    "35-44" = c(
+        "35-39",
+        "40-44"
+    ),
+    "45-64" = c(
+        "45-49",
+        "50-54",
+        "55-59",
+        "60-64"
+    ),
+    "65+" = c(
+        "65-69",
+        "70-74",
+        "75-79",
+        "80-84",
+        ">85"
+    )
+)
+
+agg_cps2018age <- cps2018age %>% 
+    group_by(cat) %>%
+    summarise(prop=sum(prop))
+```
+
+
+
+
+
+```{r}
+# cps2018 %>% 
+#   pivot_wider(names_from = variable, values_from = n) %>% 
+#   select(-value, -year)
+
+```
+
+
